@@ -1,0 +1,343 @@
+<?php
+class QMysql_Driver extends QAny_Driver
+{
+	protected $_link;
+	protected $_fetch_mode;
+	protected $_query_mode;
+	
+	function __construct($config)
+	{
+		$this->_config = $config;
+		$this->_config['path'] = substr($this->_config['path'], 1);
+		$this->fetchMode('assoc');
+	}
+	
+	protected function _throwException()
+	{
+		if (is_resource($this->_link))
+		{
+			$message = mysql_error($this->_link);
+			$code = mysql_errno($this->_link);
+		}
+		else
+		{
+			$message = mysql_error();
+			$code = mysql_errno();
+		}
+		
+		throw new QException('Action: '.$this->_action."\n".$message, $code);
+	}
+	
+	protected function _formatValue($value, $type)
+	{
+		if ('x' == $type)
+		{
+			if (is_int($value))
+				$type = 'i';
+			if (is_float($value))
+				$type = 'f';
+			if (is_bool($value))
+				$type = 'b';
+		}
+
+		switch ($type)
+		{
+			case 'e': 
+				return $value;
+			case 'i': 
+				return (int) $value;
+			case 'f':
+				return '\''.str_replace(',', '.', (float) str_replace(',', '.', $value)).'\'';
+			case 'b':
+				return $value ? 1 : 0;
+			case 'd':
+				return date('\'Y-m-d\'', $value);
+			case 't':
+				return date('\'H:i:s\'', $value);
+			case 'dt':
+				return date('\'Y-m-d H:i:s\'', $value);
+			default:
+				return '\''.mysql_real_escape_string($value, $this->_link).'\'';
+		}
+	}
+	
+	function connect()
+	{
+		$this->_action = 'connect';
+		if (false === ($this->_link = @mysql_connect($this->_config['host'], $this->_config['user'], $this->_config['pass'])))
+			$this->_throwException();
+		
+		$this->_action = 'select database';
+		if (false === @mysql_select_db($this->_config['path'], $this->_link))
+			$this->_throwException();
+			
+		if (isset($this->_config['params']['charset'])) 
+		{
+			$this->_action = 'set charset';
+			$success = false;
+			if (function_exists('mysql_set_charset'))	// MySQL 5.0.7 and PHP 5.2.3 
+				$success = @mysql_set_charset($this->_config['params']['charset'], $this->_link);
+			else
+				$success = @mysql_query('SET NAMES "'.$this->_config['params']['charset'].'"', $this->_link);
+			
+			if (!$success)
+				$this->_throwException();
+		}
+			
+		return $this;
+	}
+	
+	function disconnect()
+	{
+		$this->_action = 'disconnect';
+		if (false === mysql_close($this->_link))
+			$this->_throwException();
+			
+		return $this;
+	}
+	
+	function fetchMode($mode = null)
+	{
+		if (!$mode)
+			return $this->_fetch_mode;
+			
+		$this->_fetch_mode = $mode;
+		return $this;
+	}
+	
+	function buildQuery($sql, $values)
+	{
+		// detect query mode
+		$this->_query_mode = 'select';
+		
+		if (preg_match('/^\s*(\w+)/i', $sql, $matches))
+			$this->_query_mode = strtolower($matches[1]);
+			
+		// replace # by table prefix
+		if (false !== strpos($sql, '#'))
+		{
+			$this->_action = 'build query, table prefixes: ['.$sql.']';
+			
+			$buf = explode('#',$sql);
+			for ($i = 1; $i < count($buf); $i++)
+			{
+				$prefix_id = 0;
+				$prefix_id_len = 0;
+				if (preg_match('/^(\d+)/', $buf[$i], $matches))
+				{
+					$prefix_id = $matches[1];
+					$prefix_id_len = strlen($matches[1]);
+				}
+					
+				if (!isset($this->_table_prefix[$prefix_id]))
+					return false;
+					
+				$buf[$i] = $this->_table_prefix[$prefix_id].substr($buf[$i], $prefix_id_len);
+			}
+			$sql = implode('', $buf);
+		}
+		
+		if (is_null($values))	// if values not passed - return builded sql
+			return $sql;
+		
+		$this->_action = 'build query, place holders: ['.$sql.']';
+		
+		// replace values for insert mode
+		if ('insert' == $this->_query_mode)
+		{
+			$insert_set = false;
+			for ($i = 0; $i < count($values); $i++)
+			{
+				if (!is_array($values[$i]))
+					continue;
+				
+				$insert_set = true;	
+				break;
+			}
+			
+			if ($insert_set)
+			{
+				// find template for inserting set of data
+				if (!preg_match('/VALUES\s*\((.*?)\)/', $sql, $template, PREG_OFFSET_CAPTURE))
+					return false;
+				
+				//__($template);
+				
+				$buf = explode('?', $template[1][0]);
+				$matches = array();
+				for ($i = 1; $i < count($buf); $i++)
+				{
+					if (!preg_match('/^(\w+)/', $buf[$i], $matches))
+						continue;
+						
+					$buf[$i] = array(
+						'type' => $matches[1],
+						'after' => substr($buf[$i], strlen($matches[1]))
+					);
+				}
+				
+				//__($buf);
+				$set = array();
+				//foreach ($values as $k => &$row)
+				$i = -1;
+				$n = count($values);
+				while ($i < $n)
+				{
+					$i++;
+					//__($values[$i]);
+					
+					if (!is_array($values[$i]))
+						continue;
+					
+					$set[$i] = '('.$buf[0];		
+					for ($j = 1; $j < count($buf); $j++)
+						$set[$i] .= $this->_formatValue(array_shift($values[$i]), $buf[$j]['type']).$buf[$j]['after'];
+
+					$set[$i] .= ')';
+					unset($values[$i]);
+				}
+				
+				$sql = substr($sql, 0, $template[0][1]).'VALUES '.implode(', ', $set).substr($sql, $template[0][1]+strlen($template[0][0]));
+			}
+		}
+		//__($values);
+		// replace place holders by values
+		//if (false !== strpos($sql, '?'))	// if values not a set of array
+		if (count($values))
+		{
+			$buf = explode('?', $sql);
+			$matches = array();
+			for ($i = 1; $i < count($buf); $i++)
+			{
+				if (!preg_match('/^(\w+)/', $buf[$i], $matches))
+					continue;
+					
+				$buf[$i] = $this->_formatValue(array_shift($values), $matches[1]).substr($buf[$i], strlen($matches[1]));
+			}
+			$sql = implode('', $buf);
+		}
+		
+		return $sql;
+	}
+	
+	function query($sql, $values = array())
+	{
+		global $__qds;
+		
+		if (false === ($sql = $this->buildQuery($sql, $values)))
+			$this->_throwException();
+		
+		$t0 = microtime(true);
+		$this->_action = 'execute query: ['.$sql.']';
+		
+		if (false === ($res = @mysql_query($sql, $this->_link)))	
+			$this->_throwException();
+		
+		$t1 = microtime(true);
+		$__qds[$this->_action] = $t1-$t0;
+		
+		switch ($this->_query_mode)
+		{
+			case 'insert':
+				return mysql_insert_id($this->_link); 
+				break;
+			case 'update': case 'delete': case 'replace':
+				return mysql_affected_rows($this->_link);
+				break;
+		}
+			
+		return new QMysql_Result($res, $this->_fetch_mode);
+	}
+}
+
+class QMysql_Result
+{
+	protected $_result;
+	protected $_fetch_mode;
+	protected $_fetch_function;
+	
+	function __construct($result, $fetch_mode = 'assoc')
+	{
+		$this->_result = $result;
+		$this->fetchMode($fetch_mode);
+	}
+	
+	function fetchMode($mode = null)
+	{
+		if (!$mode)
+			return $this->_fetch_mode;
+			
+		$this->_fetch_mode = $mode;
+		$this->_fetch_function = 'mysql_fetch_'.$mode;
+		return $this;
+	}
+	
+	function numRows()
+	{
+		return mysql_num_rows($this->_result);
+	}
+	
+	function fetchRow($field = null)
+	{
+		return $this->row($field);
+	}
+	
+	function row($field = null)
+	{
+		$fetch_function = $this->_fetch_function;
+		
+		$buf = $fetch_function($this->_result);
+		mysql_free_result($this->_result);
+		
+		if (null !== $field && array_key_exists($field, $buf))
+			return $buf[$field];
+		
+		return $buf;
+	}
+	
+	function fetchEach()
+	{
+		return $this->each();
+	}
+	
+	function each()
+	{
+		$fetch_function = $this->_fetch_function;
+
+		if (false === ($buf = $fetch_function($this->_result)))
+		{			
+			mysql_free_result($this->_result);
+			return false;
+		}
+		
+		return $buf;
+	}
+	
+	function fetchAll($by_key = null)
+	{
+		return $this->all($by_key);
+	}
+	
+	function all($by_key = null)
+	{
+		$all = array();
+		$fetch_function = $this->_fetch_function;		
+		while ($row = $fetch_function($this->_result))
+		{
+			if (null !== $by_key)
+				$all[$row[$by_key]] = $row;
+			else
+				$all[] = $row;
+		}
+			
+		mysql_free_result($this->_result);
+		return $all;
+	}
+	
+	function free()
+	{
+		mysql_free_result($this->_result);
+		return $this;
+	}
+}
+?>
