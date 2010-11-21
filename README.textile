@@ -5,23 +5,21 @@ Simple database abstraction library for php
 h2. Connect to database
 
 bc. require 'path/to/Q/Q.php';
-	
-	QF('mysql://user:pass@host/dbname')	// setup dsn
-		->connect()						// connect to database
-		->alias('default')				// set "default" alias
-		->tablePrefix('project__');		// set table prefix
-		
-Connect to other db and set alias "other-db"		
+QF('mysql://user:pass@host/dbname') // setup dsn
+    ->connect()                     // connect to database
+    ->alias('default')              // set "default" alias
+    ->tablePrefix('project__');     // set table prefix
+
+Connect to other db and set alias "other-db"
 
 bc. QF('mysql://user:pass@host/dbname2?charset=utf8')->alias('other-db')->connect()->tablePrefix('bb__');
-		
 
-h2. Executing query, fetch row and free result		
+h2. Executing query, fetch row and free result
 
 Execute query, fetch first row and free result
 
 bc. $res = Q('SELECT * FROM #users WHERE id = ?i', array(1));
-	$row = $res->row();
+$row = $res->row();
 
 Builded query:
 
@@ -30,18 +28,16 @@ bc. SELECT * FROM project__users WHERE id = 1
 Execute query and fetch each rows. When all rows will be fetched - result will be freeing automatically
 
 bc. $res = Q('SELECT * FROM #users');
-	
-	while ($row = $res->each())
-	{
-		print_r($row);
-	}
+while ($row = $res->each())
+{
+    print_r($row);
+}
 
 Execute query, get all rows and free result
 
 bc. $all = Q('SELECT * FROM #users WHERE id > ?i AND id < ?i', array(0, 30))->all();
-
-	// get all rows, key in result array will be field ID
-	$all = Q('SELECT * FROM #users WHERE id > ?i AND id < ?i', array(0, 30))->all('id');
+// get all rows, key in result array will be field ID
+$all = Q('SELECT * FROM #users WHERE id > ?i AND id < ?i', array(0, 30))->all('id');
 
 Builded query:
 
@@ -50,21 +46,23 @@ bc. SELECT * FROM project__users WHERE id > 0 AND id < 30
 Insert set of data by using one template
 
 bc. Q('INSERT INTO #test VALUES (?i, ?s, ?x, ?e)
-			ON DUPLICATE KEY UPDATE a = VALUES(a)*?x', array(
-		array(10, 'str11', 'str12', 'a*10'),
-		array(20, 'str21', 'str22', 'a*20'),
-		50,
-		array(30, 'str31', 'str32', 'a*30')		
-	));
+        ON DUPLICATE KEY UPDATE a = VALUES(a)*?x', array(
+    array(10, 'str11', 'str12', 'a*10'),
+    array(20, 'str21', 'str22', 'a*20'),
+    50,
+    array(30, 'str31', 'str32', 'a*30')
+));
 
 Builded query:
-bc. INSERT INTO project__test VALUES 
-			(10, 'str11', 'str12', a*10), 
-			(10, 'str21', 'str22', a*20), 
-			(10, 'str31', 'str32', a*30)
-		ON DUPLICATE KEY UPDATE
-			a = VALUES(a)*50
 
+bc. INSERT INTO project__test VALUES 
+        (10, 'str11', 'str12', a*10), 
+        (10, 'str21', 'str22', a*20), 
+        (10, 'str31', 'str32', a*30)
+    ON DUPLICATE KEY UPDATE
+        a = VALUES(a)*50
+
+Where:
 ?i - integer
 ?f - float
 ?b - boolean
@@ -82,4 +80,4 @@ bc. $all = Q('other-db: SHOW TABLES')->all();
 You can use connection as a variable
 
 bc. $db = QF('mysql://user:pass@host/dbname?charset=utf8')->connect()->tablePrefix('aa__');
-	$all = $db->query('SELECT * FROM #registration_document_types')->all();
+$all = $db->query('SELECT * FROM #registration_document_types')->all();
