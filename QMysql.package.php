@@ -1,4 +1,5 @@
 <?php
+
 class QMysql_Driver extends QAny_Driver
 {
 	protected $_link;
@@ -146,12 +147,14 @@ class QMysql_Driver extends QAny_Driver
 		if ('insert' == $this->_query_mode)
 		{
 			$insert_set = false;
-			for ($i = 0; $i < count($values); $i++)
+			//for ($i = 0, $in = count($values); $i < $in; $i++)
+			foreach ($values as &$value)
 			{
-				if (!is_array($values[$i]))
+				//if (!is_array($values[$i]))
+				if (!is_array($value))
 					continue;
 				
-				$insert_set = true;	
+				$insert_set = true;
 				break;
 			}
 			
@@ -288,6 +291,9 @@ class QMysql_Result
 		
 		$buf = $fetch_function($this->_result);
 		mysql_free_result($this->_result);
+		
+		if (false === $buf)
+			return false;
 		
 		if (null !== $field && array_key_exists($field, $buf))
 			return $buf[$field];
