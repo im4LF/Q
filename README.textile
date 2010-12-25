@@ -114,14 +114,14 @@ bc. Q('INSERT INTO #table (a, b, c) VALUES
         ON DUPLICATE KEY UPDATE a = VALUES(a) * ?x:multiplier', array(
     array(
         'field_a' => '1', 'field_b' => 'AAA 1', 1
-	),
-	array(
+    ),
+    array(
         'field_a' => '2', 'field_b' => 'BBB 2', 2
-	),
-	'multiplier' => 75,
-	array(
+    ),
+    'multiplier' => 75,
+    array(
         'field_a' => '3', 'field_b' => 'CCC 3', 3
-	)
+    )
 ));
 
 Builded query:
