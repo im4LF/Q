@@ -143,12 +143,14 @@ class QMysql_Driver extends QAny_Driver
 		
 		$this->_action = 'build query, place holders: ['.$sql.']';
 		
+		$aliases = array();
+		
 		// replace values for insert mode
 		if ('insert' == $this->_query_mode)
 		{
 			$insert_set = false;
 			//for ($i = 0, $in = count($values); $i < $in; $i++)
-			foreach ($values as &$value)
+			foreach ($values as $value)
 			{
 				//if (!is_array($values[$i]))
 				if (!is_array($value))
@@ -160,22 +162,24 @@ class QMysql_Driver extends QAny_Driver
 			
 			if ($insert_set)
 			{
-				// find template for inserting set of data
-				if (!preg_match('/VALUES\s*\((.*?)\)/', $sql, $template, PREG_OFFSET_CAPTURE))
+				// find template for inserting set of data, match inner blocks - (some block (inner block))
+				if (!preg_match('/\((?>[^)(]+|(?R))+\)/x', $sql, $template, PREG_OFFSET_CAPTURE, stripos($sql, 'VALUES')))
 					return false;
 				
 				//__($template);
 				
-				$buf = explode('?', $template[1][0]);
+				//$buf = explode('?', $template[1][0]);
+				$buf = explode('?', substr($template[0][0], 1, strlen($template[0][0])-2));
 				$matches = array();
 				for ($i = 1; $i < count($buf); $i++)
 				{
-					if (!preg_match('/^(\w+)/', $buf[$i], $matches))
+					if (!preg_match('/^(\w+)(:(\w+))?/', $buf[$i], $matches))
 						continue;
 						
 					$buf[$i] = array(
 						'type' => $matches[1],
-						'after' => substr($buf[$i], strlen($matches[1]))
+						'alias' => isset($matches[3]) ? $matches[3] : null,
+						'after' => substr($buf[$i], strlen($matches[1]) + (isset($matches[2]) ? strlen($matches[2]) : 0))
 					);
 				}
 				
@@ -183,24 +187,44 @@ class QMysql_Driver extends QAny_Driver
 				$set = array();
 				//foreach ($values as $k => &$row)
 				$i = -1;
-				$n = count($values);
-				while ($i < $n)
+				$n = count($values)-1;
+				$value = null;
+				//while ($i < $n)
+				foreach ($values as $key => &$row)
 				{
-					$i++;
-					//__($values[$i]);
-					
-					if (!is_array($values[$i]))
+					//if (!is_array($values[$i]))
+					if (!is_array($row))
 						continue;
+						
+					$i++;
 					
-					$set[$i] = '('.$buf[0];		
+					$set[$i] = '('.$buf[0];
 					for ($j = 1; $j < count($buf); $j++)
-						$set[$i] .= $this->_formatValue(array_shift($values[$i]), $buf[$j]['type']).$buf[$j]['after'];
+					{
+						if (!is_null($buf[$j]['alias']))	// if is set alias of field
+						{
+							//$current_alias = $i.'-'.$buf[$j]['alias'];
+							$current_alias = $buf[$j]['alias'];
+							if (!@array_key_exists($current_alias, $aliases[$i]))
+							{
+								$aliases[$i][$current_alias] = $row[$buf[$j]['alias']];
+								unset($row[$buf[$j]['alias']]);
+							}
+							
+							$value = $aliases[$i][$current_alias];
+						}
+						else
+							$value = array_shift($row);
+					
+						$set[$i] .= $this->_formatValue($value, $buf[$j]['type']).$buf[$j]['after'];
+					}
 
 					$set[$i] .= ')';
-					unset($values[$i]);
+					unset($values[$key]);
+					//unset($aliases[$i]);
 				}
 				
-				$sql = substr($sql, 0, $template[0][1]).'VALUES '.implode(', ', $set).substr($sql, $template[0][1]+strlen($template[0][0]));
+				$sql = substr($sql, 0, $template[0][1]).implode(', ', $set).substr($sql, $template[0][1]+strlen($template[0][0]));
 			}
 		}
 		//__($values);
@@ -210,16 +234,35 @@ class QMysql_Driver extends QAny_Driver
 		{
 			$buf = explode('?', $sql);
 			$matches = array();
+			$value = null;
+			
 			for ($i = 1; $i < count($buf); $i++)
 			{
-				if (!preg_match('/^(\w+)/', $buf[$i], $matches))
+				if (!preg_match('/^(\w+)(:(\w+))?/', $buf[$i], $matches))
 					continue;
+
+				if (isset($matches[3]))	// if is set alias of field
+				{
+					//if (!array_key_exists($matches[3], $aliases) && array_key_exists($matches[3], $values))
+					if (!array_key_exists($matches[3], $aliases))
+					{
+						$aliases[$matches[3]] = $values[$matches[3]];
+						unset($values[$matches[3]]);
+					}
+					/*else 
+						$aliases[$matches[3]] = array_shift($values);*/
 					
-				$buf[$i] = $this->_formatValue(array_shift($values), $matches[1]).substr($buf[$i], strlen($matches[1]));
+					$value = $aliases[$matches[3]];
+				}
+				else
+					$value = array_shift($values);
+					
+				$buf[$i] = $this->_formatValue($value, $matches[1]).
+							substr($buf[$i], strlen($matches[1]) + (isset($matches[2]) ? strlen($matches[2]) : 0));
 			}
 			$sql = implode('', $buf);
 		}
-		
+		//__($aliases);
 		return $sql;
 	}
 	

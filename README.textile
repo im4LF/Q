@@ -81,3 +81,54 @@ You can use connection as a variable
 
 bc. $db = QF('mysql://user:pass@host/dbname?charset=utf8')->connect()->tablePrefix('aa__');
 $all = $db->query('SELECT * FROM #registration_document_types')->all();
+
+h2. Aliases for query parameters
+
+You can use aliases for query parameters:
+
+bc. Q('SELECT * FROM #table WHERE a = ?s:param1 AND b = ?i:param2', array(
+        'param2' => 123,
+        'param1' => 'some value'
+);
+
+Builded query:
+
+bc. SELECT * FROM #table WHERE a = 'some value' AND b = 123
+
+Also you can use combined method of passing parameters:
+
+bc. Q('SELECT * FROM #table WHERE a = ?s:param1 AND b = ?i:param2 AND c = ?f', array(
+        'param2' => 123,
+        12.65,
+        'param1' => 'some value'
+);
+
+Builded query (if aliases not set, the parameter will be getting by array_shift):
+
+bc. SELECT * FROM #table WHERE a = 'some value' AND b = 123 AND c = 12.65
+
+Another example:
+
+bc. Q('INSERT INTO #table (a, b, c) VALUES 
+                (?i:field_a, ?s:field_b, CONCAT(?x, ":", ?s:field_b))
+        ON DUPLICATE KEY UPDATE a = VALUES(a) * ?x:multiplier', array(
+    array(
+        'field_a' => '1', 'field_b' => 'AAA 1', 1
+    ),
+    array(
+        'field_a' => '2', 'field_b' => 'BBB 2', 2
+    ),
+    'multiplier' => 75,
+    array(
+        'field_a' => '3', 'field_b' => 'CCC 3', 3
+    )
+));
+
+Builded query:
+
+bc. INSERT INTO seg__table (a, b, c) VALUES 
+        (1, 'AAA 1', CONCAT(1, ":", 'AAA 1')), 
+        (2, 'BBB 2', CONCAT(2, ":", 'BBB 2')), 
+        (3, 'CCC 3', CONCAT(3, ":", 'CCC 3'))
+    ON DUPLICATE KEY UPDATE 
+        a = VALUES(a) * 75
