@@ -7,17 +7,23 @@
 define('Q_PATH', realpath(dirname(__FILE__)));
 
 $__qr = array();
+$__q_segmentation_func = null;
 $__qds = array();
 
-function __Q_parseQuery($sql)
+function __Q_parseQuery($sql, &$values)
 {
-	global $__qr;
+	global $__qr, $__q_segmentation_func;
 	
 	$alias = 'default';
-	if (preg_match('/^([0-9a-z\-_]+?)\:\s*/', $sql, $matches, PREG_OFFSET_CAPTURE))
+	if (preg_match('/^([0-9a-z\-_\*]+?)\:\s*/', $sql, $matches, PREG_OFFSET_CAPTURE))
 	{
 		$alias = $matches[1][0];
 		$sql = substr($sql, strlen($matches[0][0]));
+
+		if ('*' == $alias && !is_null($__q_segmentation_func))
+			$alias = call_user_func_array($__q_segmentation_func, array($values));
+		else
+			$alias = 'default';
 	}
 	
 	if (!array_key_exists($alias, $__qr))
@@ -39,11 +45,10 @@ function __Q_parseQuery($sql)
 function Q($sql = null, $values = array())
 {
 	global $__qr;	
-	$buf = __Q_parseQuery($sql);
-	
+	$buf = __Q_parseQuery($sql, $values);
 	if (!$buf['sql'])
 		return $__qr[$buf['alias']];
-			
+		
 	return $__qr[$buf['alias']]->query($buf['sql'], $values);
 }
 
@@ -57,7 +62,7 @@ function Q($sql = null, $values = array())
 function Qb($sql, $values = array())
 {
 	global $__qr;
-	$buf = __Q_parseQuery($sql);
+	$buf = __Q_parseQuery($sql, $values);
 	
 	return $__qr[$buf['alias']]->buildQuery($buf['sql'], $values);
 }
@@ -68,8 +73,12 @@ function Qb($sql, $values = array())
  * @param string $dsn
  * @return object
  */
-function QF($dsn)
+function QF($dsn, $segmentation_func = null)
 {
+	global $__q_segmentation_func;
+	
+	$__q_segmentation_func = $segmentation_func;
+	
 	$config = @parse_url($dsn);
 	if (isset($config['query']))
 	{
@@ -115,6 +124,8 @@ class QAny_Driver
 	protected $_query_mode;
 	protected $_table_prefix;
 	
+	protected $_table_segmentation_func;
+	
 	/**
 	 * Set alias for connection and save it in registry 
 	 * 
@@ -139,6 +150,15 @@ class QAny_Driver
 			return $this->_table_prefix;
 			
 		$this->_table_prefix = (array) $prefix;
+		return $this;
+	}
+	
+	function tableSegmentationFunc($name = null)
+	{
+		if (is_null($name))
+			return $this->_table_segmentation_func;
+			
+		$this->_table_segmentation_func = $name;
 		return $this;
 	}
 	

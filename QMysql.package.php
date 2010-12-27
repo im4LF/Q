@@ -65,7 +65,7 @@ class QMysql_Driver extends QAny_Driver
 	function connect()
 	{
 		$this->_action = 'connect';
-		if (false === ($this->_link = @mysql_connect($this->_config['host'], $this->_config['user'], $this->_config['pass'])))
+		if (false === ($this->_link = @mysql_connect($this->_config['host'], $this->_config['user'], $this->_config['pass'], true)))
 			$this->_throwException();
 		
 		$this->_action = 'select database';
@@ -84,7 +84,7 @@ class QMysql_Driver extends QAny_Driver
 			if (!$success)
 				$this->_throwException();
 		}
-			
+
 		return $this;
 	}
 	
@@ -124,15 +124,24 @@ class QMysql_Driver extends QAny_Driver
 			{
 				$prefix_id = 0;
 				$prefix_id_len = 0;
-				if (preg_match('/^(\d+)/', $buf[$i], $matches))
+				
+				preg_match('/^(\d+)?(\w+)(\/s)?/', $buf[$i], $matches, PREG_OFFSET_CAPTURE);
+
+				if ($matches[1][1] == 0)
 				{
-					$prefix_id = $matches[1];
-					$prefix_id_len = strlen($matches[1]);
+					$prefix_id = (int) $matches[1][0];
+					$prefix_id_len = strlen($matches[1][0]);
 				}
-					
+				
 				if (!isset($this->_table_prefix[$prefix_id]))
 					return false;
 					
+				if (isset($matches[3]))
+				{
+					$suffix = call_user_func_array($this->_table_segmentation_func, array($matches[2][0], $values));
+					$buf[$i] = $matches[1][0].$matches[2][0].$suffix.substr($buf[$i], $matches[3][1]+2);
+				}
+				
 				$buf[$i] = $this->_table_prefix[$prefix_id].substr($buf[$i], $prefix_id_len);
 			}
 			$sql = implode('', $buf);
