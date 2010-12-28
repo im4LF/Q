@@ -1,4 +1,4 @@
-h1. Q3 
+h1. Q3
 
 Simple database abstraction library for php
 
@@ -132,78 +132,3 @@ bc. INSERT INTO seg__table (a, b, c) VALUES
         (3, 'CCC 3', CONCAT(3, ":", 'CCC 3'))
     ON DUPLICATE KEY UPDATE 
         a = VALUES(a) * 75
-
-h2. Data segmentation
-
-For example you have large amount of data. For example its a table of users.
-You can define segmentation rule by which you want to separate data at segments.
-For example you dicede separate data by first letter of username: Anna, Amy, Alice ... will be stored in @#users_a@, Bob, Brian ... - @#users_b@ etc.
-
-bc. // segmentation function get table name and query params
-function tableSeg($table, &$query_params)
-{
-    if ('table' != $table)
-        return $table;
-    
-    return '_'.strtolower($query_params['name']{0});
-}
-
-Now you must define segmentation function by @tableSegmentationFunc@ method:
-
-bc. QF('mysql://user:pass@localhost/test?charset=utf8')
-    ->alias('default')
-    ->tablePrefix('seg__')
-    ->tableSegmentationFunc('tableSeg'); 
-
-And now all queries like this will separate data:
-
-bc. Q('INSERT INTO #users/s VALUES(NULL, ?s:name, ?s:param1, ?s:param2)', array(
-    'name' => 'Alice',
-    'param1' => mt_rand(),
-    'param2' => mt_rand()
-));
-
-Builded query:
-
-bc. INSERT INTO seg__users_a VALUES(NULL, 'Alice', '191376831', '333672130')
-
-Also you can separate data between different database servers. 
-You must define segmentaion function and several connections:
-
-bc. function dsnSeg(&$query_params)
-{
-    $dsn = 'default';
-    
-    if (preg_match('/[a-e]/i', $query_params['name']{0}))
-        $dsn = 'table_ae';
-    elseif (preg_match('/[f-j]/i', $query_params['name']{0}))
-        $dsn = 'table_fj';
-
-    return $dsn;
-}
-
-bc. QF('mysql://user1:pass1@seg_ae/db?charset=utf8', 'dsnSeg')->alias('seg_ae')->tablePrefix('project__');
-QF('mysql://user2:pass2@seg_fj/db?charset=utf8', 'dsnSeg')->alias('seg_fj')->tablePrefix('project__');
-
-And now queries like this will separate data beetween different server:
-
-bc. Q('*: INSERT INTO #users VALUES(NULL, ?s:name, ?s:param1, ?s:param2)', array(
-    'name' => 'Fry',
-    'param1' => mt_rand(),
-    'param2' => mt_rand()
-));
-
-Query will be executed on @seg_fj@ connection.
-
-h2. Lazy connection
-
-When you creating new database object by factory @QF@ you may not open connection by @connect@ method. The connection will be opened with first query.
-
-bc. QF('mysql://user:pass@localhost/test?charset=utf8')->alias('default')->tablePrefix('prefix__');
-// connection not opened
-...
-Q('SELECT * FROM #some_table WHERE param1 = 123');
-// connection opened and query executed
-...
-Q('SELECT * FROM #some_table WHERE param1 = 321');
-// query executed on previously opened connection
