@@ -84,6 +84,8 @@ class QMysql_Driver extends QAny_Driver
 			if (!$success)
 				$this->_throwException();
 		}
+		
+		$this->_is_connected = true;
 
 		return $this;
 	}

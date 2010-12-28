@@ -49,6 +49,9 @@ function Q($sql = null, $values = array())
 	if (!$buf['sql'])
 		return $__qr[$buf['alias']];
 		
+	if (!$__qr[$buf['alias']]->isConnected())
+		$__qr[$buf['alias']]->connect();
+		
 	return $__qr[$buf['alias']]->query($buf['sql'], $values);
 }
 
@@ -63,6 +66,8 @@ function Qb($sql, $values = array())
 {
 	global $__qr;
 	$buf = __Q_parseQuery($sql, $values);
+	if (!$__qr[$buf['alias']]->isConnected())
+		$__qr[$buf['alias']]->connect();
 	
 	return $__qr[$buf['alias']]->buildQuery($buf['sql'], $values);
 }
@@ -109,6 +114,7 @@ function QF($dsn, $segmentation_func = null)
 
 class QAny_Driver
 {
+	protected $_is_connected = false;
 	protected $_alias;
 	protected $_config;
 	protected $_action;
@@ -125,6 +131,11 @@ class QAny_Driver
 	protected $_table_prefix;
 	
 	protected $_table_segmentation_func;
+	
+	function isConnected()
+	{
+		return $this->_is_connected;
+	}
 	
 	/**
 	 * Set alias for connection and save it in registry 
