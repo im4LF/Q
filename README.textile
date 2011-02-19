@@ -86,7 +86,7 @@ Builded query:
 
 bc. SELECT * FROM project__test WHERE id IN(1,3,5,7)
 
-List of string values:
+List of string values with @?ls@: modifier:
 
 bc. $names = array('Anna', 'Bob');
 $res = Q('SELECT * FROM #test WHERE name IN(?ls)', array($names));
