@@ -41,8 +41,6 @@ class QMysql_Driver extends QAny_Driver
 				$type = 'b';
 		}
 
-		__($value, $type);
-
 		switch ($type)
 		{
 			case 'li':
@@ -92,14 +90,14 @@ class QMysql_Driver extends QAny_Driver
 		if (false === @mysql_select_db($this->_config['path'], $this->_link))
 			$this->_throwException();
 			
-		if (isset($this->_config['params']['charset'])) 
+		if (isset($this->_config['params']['encoding'])) 
 		{
-			$this->_action = 'set charset';
+			$this->_action = 'set encoding';
 			$success = false;
-			if (function_exists('mysql_set_charset'))	// MySQL 5.0.7 and PHP 5.2.3 
-				$success = @mysql_set_charset($this->_config['params']['charset'], $this->_link);
+			if (function_exists('mysql_set_charset'))
+				$success = @mysql_set_charset($this->_config['params']['encoding'], $this->_link);
 			else
-				$success = @mysql_query('SET NAMES "'.$this->_config['params']['charset'].'"', $this->_link);
+				$success = @mysql_query('SET NAMES "'.$this->_config['params']['encoding'].'"', $this->_link);
 			
 			if (!$success)
 				$this->_throwException();
@@ -409,4 +407,3 @@ class QMysql_Result
 		return $this;
 	}
 }
-?>

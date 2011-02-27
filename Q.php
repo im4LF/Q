@@ -73,12 +73,7 @@ function QF($dsn)
 	$config = @parse_url($dsn);
 	if (isset($config['query']))
 	{
-		$buf = explode('&', $config['query']);
-		foreach ($buf as $param)
-		{
-			list ($k, $v) = explode('=', $param);
-			$config['params'][$k] = $v;
-		}
+		parse_str($config['query'], $config['params']);
 		unset($config['query']);
 	}
 	
@@ -94,8 +89,8 @@ function QF($dsn)
 		require $package_file;
 	}
 	
-	$object = new $class_name($config); 
-	return $object;
+	$object = new $class_name($config);
+	return $object->tablePrefix($config['params']['table_prefix']); 
 }
 
 class QAny_Driver
@@ -113,7 +108,7 @@ class QAny_Driver
 		'dt' => 'datetime',
 	);
 	protected $_query_mode;
-	protected $_table_prefix;
+	protected $_table_prefix = array('');
 	
 	/**
 	 * Set alias for connection and save it in registry 
