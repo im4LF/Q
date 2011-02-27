@@ -41,12 +41,32 @@ class QMysql_Driver extends QAny_Driver
 				$type = 'b';
 		}
 
+		__($value, $type);
+
 		switch ($type)
 		{
+			case 'li':
+				if (!is_array($value) || !count($value))
+					return '0';
+					
+				$buf = (int) array_shift($value);
+				while ($i = array_shift($value))
+					$buf .= ',' . (int) $i;
+					
+				return $buf;
+			case 'ls':
+				if (!is_array($value) || !count($value))
+					return '\'\'';
+					
+				$buf = '\''.mysql_real_escape_string(array_shift($value), $this->_link).'\'';
+				while ($s = array_shift($value))
+					$buf .= ',\''.mysql_real_escape_string($s, $this->_link).'\'';
+					
+				return $buf;
 			case 'e': 
 				return $value;
 			case 'i': 
-				return (int) $value;
+				return (int) $value;			
 			case 'f':
 				return '\''.str_replace(',', '.', (float) str_replace(',', '.', $value)).'\'';
 			case 'b':
