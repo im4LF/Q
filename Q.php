@@ -90,7 +90,10 @@ function QF($dsn)
 	}
 	
 	$object = new $class_name($config);
-	return $object->tablePrefix($config['params']['table_prefix']); 
+	if (isset($config['params']['table_prefix']))
+		$object->tablePrefix($config['params']['table_prefix']);
+	
+	return $object; 
 }
 
 class QAny_Driver
@@ -99,7 +102,7 @@ class QAny_Driver
 	protected $_config;
 	protected $_action;
 	protected $_place_holders = array(
-		'i' => 'integer',		
+		'i' => 'integer',
 		'f' => 'float',
 		'b' => 'boolean',
 		's' => 'string',
