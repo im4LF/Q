@@ -33,6 +33,8 @@ class QMysql_Driver extends QAny_Driver
 	{
 		if ('x' == $type)
 		{
+			if (is_null($value))
+				return 'NULL';
 			if (is_int($value))
 				$type = 'i';
 			if (is_float($value))
@@ -46,25 +48,25 @@ class QMysql_Driver extends QAny_Driver
 			case 'li':
 				if (!is_array($value) || !count($value))
 					return '0';
-					
+				
 				$buf = (int) array_shift($value);
 				while ($i = array_shift($value))
 					$buf .= ',' . (int) $i;
-					
+				
 				return $buf;
 			case 'ls':
 				if (!is_array($value) || !count($value))
 					return '\'\'';
-					
+				
 				$buf = '\''.mysql_real_escape_string(array_shift($value), $this->_link).'\'';
 				while ($s = array_shift($value))
 					$buf .= ',\''.mysql_real_escape_string($s, $this->_link).'\'';
-					
+				
 				return $buf;
 			case 'e': 
 				return $value;
 			case 'i': 
-				return (int) $value;			
+				return (int) $value;
 			case 'f':
 				return '\''.str_replace(',', '.', (float) str_replace(',', '.', $value)).'\'';
 			case 'b':
@@ -181,7 +183,7 @@ class QMysql_Driver extends QAny_Driver
 			if ($insert_set)
 			{
 				// find template for inserting set of data, match inner blocks - (some block (inner block))
-				if (!preg_match('/\((?>[^)(]+|(?R))+\)/x', $sql, $template, PREG_OFFSET_CAPTURE, stripos($sql, 'VALUES')))
+				if (!preg_match('/\((?>[^)(]+|(?R))*\)/x', $sql, $template, PREG_OFFSET_CAPTURE, stripos($sql, 'VALUES')))
 					return false;
 				
 				//__($template);
