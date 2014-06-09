@@ -14,6 +14,8 @@ Connect to other db and set alias "other-db"
 
 bc. QF('mysql://user:pass@host/dbname2?charset=utf8')->alias('other-db')->connect()->tablePrefix('bb__');
 
+NEW! QF('mysqli://'.DB_USER.':'.DB_PASS.'@'.DB_HOST.':'.DB_PORT.'/'.DB_BASE.'?encoding=utf8')->connect()->alias('default')->tablePrefix(DB_PREF);
+
 h2. Executing query, fetch row and free result
 
 *Execute query, fetch first row and free result*
