@@ -5,7 +5,7 @@ Simple database abstraction library for php
 h2. Connect to database
 
 bc. require 'path/to/Q/Q.php';
-QF('mysql://user:pass@host/dbname') // setup dsn
+QF('mysql://user:pass@host:port/dbname') // setup dsn
     ->connect()                     // connect to database
     ->alias('default')              // set "default" alias
     ->tablePrefix('project__');     // set table prefix
@@ -14,7 +14,7 @@ Connect to other db and set alias "other-db"
 
 bc. QF('mysql://user:pass@host/dbname?encoding=utf8')->alias('other-db')->connect()->tablePrefix('bb__');
 or
-bc. QF('mysqli://user:pass@host:port/dbname?encoding=utf8')->connect()->tablePrefix('bb__');
+QF('mysqli://user:pass@host:port/dbname?encoding=utf8')->alias('other-db')->connect()->tablePrefix('bb__');
 
 h2. Executing query, fetch row and free result
 
