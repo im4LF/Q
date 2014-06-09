@@ -12,9 +12,9 @@ QF('mysql://user:pass@host/dbname') // setup dsn
 
 Connect to other db and set alias "other-db"
 
-bc. QF('mysql://user:pass@host/dbname2?charset=utf8')->alias('other-db')->connect()->tablePrefix('bb__');
+bc. QF('mysql://user:pass@host/dbname?encoding=utf8')->alias('other-db')->connect()->tablePrefix('bb__');
 or
-bc. QF('mysqli://'.DB_USER.':'.DB_PASS.'@'.DB_HOST.':'.DB_PORT.'/'.DB_BASE.'?encoding=utf8')->connect()->alias('default')->tablePrefix(DB_PREF);
+bc. QF('mysqli://user:pass@host:port/dbname?encoding=utf8')->connect()->tablePrefix('bb__');
 
 h2. Executing query, fetch row and free result
 
