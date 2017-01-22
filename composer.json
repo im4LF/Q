@@ -1,5 +1,5 @@
 {
-    "name": "lnked/q",
+    "name": "lnked/query",
     "type": "library",
     "license": "MIT",
     "keywords": ["query builder", "mysql"],
@@ -26,7 +26,5 @@
             "Q.php",
             "QMysqli.package.php"
         ]
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+    }
 }
