@@ -5,6 +5,7 @@
     "keywords": ["query builder", "mysql"],
     "description": "a query builder library for PHP",
     "homepage": "http://github.com/lnked/Q",
+    "minimum-stability": "dev",
     "authors": [
         {
             "name": "im4LF",
