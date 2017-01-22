@@ -23,8 +23,7 @@
     },
     "autoload": {
         "files": [
-            "Q.php",
-            "QMysqli.package.php"
+            "Q.php"
         ]
     }
 }

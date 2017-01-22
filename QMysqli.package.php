@@ -343,8 +343,6 @@ class Qmysqli_Driver extends QAny_Driver
 				break;
 		}
         
-        $_SESSION['sql'] += 1;
-        
 		return new Qmysqli_Result($res, $this->_fetch_mode);
 	}
 }
