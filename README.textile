@@ -103,7 +103,7 @@ bc. $all = Q('other-db: SHOW TABLES')->all();
 
 *You can use connection as a variable*
 
-bc. $db = QF('mysql://user:pass@host/dbname?charset=utf8')->connect()->tablePrefix('aa__');
+bc. $db = QF('mysql://user:pass@host/dbname?encoding=utf8')->connect()->tablePrefix('aa__');
 $all = $db->query('SELECT * FROM #registration_document_types')->all();
 
 h2. Aliases for query parameters

@@ -9,7 +9,6 @@ class Qmysqli_Driver extends QAny_Driver
 
 	private $memcache_enable = false ;
 	private $memcache = null ;
-	private $memcache_compress = MEMCACHE_COMPRESSED ;
     private $memcache_cache_time = 3600 ;
 	
 	function __construct($config)
