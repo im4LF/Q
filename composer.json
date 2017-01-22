@@ -1,5 +1,5 @@
 {
-    "name": "lnked/query",
+    "name": "lnked/q",
     "type": "library",
     "license": "MIT",
     "keywords": ["query builder", "mysql"],
