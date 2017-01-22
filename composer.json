@@ -1,0 +1,29 @@
+{
+  "name": "lnked/Q",
+  "type": "library",
+  "description": "a query builder library for PHP",
+  "keywords": ["query builder", "mysql"],
+  "homepage": "http://github.com/lnked/Q",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "im4LF",
+      "role": "Developer",
+      "homepage": "https://github.com/im4LF/Q"
+    },
+    {
+      "name": "lnked",
+      "role": "Developer",
+      "homepage": "http://github.com/lnked/"
+    }
+  ],
+  "require": {
+    "php": ">= 5.4.0"
+  },
+  "autoload": {
+    "files": [
+      "Q.php",
+      "QMysqli.package.php"
+    ]
+  }
+}
