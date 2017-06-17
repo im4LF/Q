@@ -43,8 +43,21 @@ function Q($sql = null, $values = array())
 	
 	if (!$buf['sql'])
 		return $__qr[$buf['alias']];
-			
-	return $__qr[$buf['alias']]->query($buf['sql'], $values);
+
+	$_bq = $__qr[$buf['alias']]->query($buf['sql'], $values);
+
+	if (!isset($_SESSION['sql'])) {
+		$_SESSION['sql'] = 0;
+	}
+
+	if (!isset($_SESSION['sql_array'])) {
+		$_SESSION['sql_array'] = [];
+	}
+
+	$_SESSION['sql'] += 1;
+	$_SESSION['sql_array'][] = $_bq;
+
+	return $_bq;
 }
 
 /**
