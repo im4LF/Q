@@ -1,0 +1,156 @@
+h1. Q3
+
+Simple database abstraction library for php
+
+h2. Connect to database
+
+bc. require 'path/to/Q/Q.php';
+QF('mysql://user:pass@host/dbname') // setup dsn
+    ->connect()                     // connect to database
+    ->alias('default')              // set "default" alias
+    ->tablePrefix('project__');     // set table prefix
+
+Connect to other db and set alias "other-db"
+
+bc. QF('mysql://user:pass@host/dbname2?charset=utf8')->alias('other-db')->connect()->tablePrefix('bb__');
+
+h2. Executing query, fetch row and free result
+
+*Execute query, fetch first row and free result*
+
+bc. $res = Q('SELECT * FROM #users WHERE id = ?i', array(1));
+$row = $res->row();
+
+Builded query:
+
+bc. SELECT * FROM project__users WHERE id = 1
+
+*Execute query and fetch each rows.* When all rows will be fetched - result will be freeing automatically
+
+bc. $res = Q('SELECT * FROM #users');
+while ($row = $res->each())
+{
+    print_r($row);
+}
+
+Execute query, get all rows and free result
+
+bc. $all = Q('SELECT * FROM #users WHERE id > ?i AND id < ?i', array(0, 30))->all();
+// get all rows, key in result array will be field ID
+$all = Q('SELECT * FROM #users WHERE id > ?i AND id < ?i', array(0, 30))->all('id');
+
+Builded query:
+
+bc. SELECT * FROM project__users WHERE id > 0 AND id < 30
+
+*Insert set of data by using one template*
+
+bc. Q('INSERT INTO #test VALUES (?i, ?s, ?x, ?e)
+        ON DUPLICATE KEY UPDATE a = VALUES(a)*?x', array(
+    array(10, 'str11', 'str12', 'a*10'),
+    array(20, 'str21', 'str22', 'a*20'),
+    50,
+    array(30, 'str31', 'str32', 'a*30')
+));
+
+Builded query:
+
+bc. INSERT INTO project__test VALUES 
+        (10, 'str11', 'str12', a*10), 
+        (10, 'str21', 'str22', a*20), 
+        (10, 'str31', 'str32', a*30)
+    ON DUPLICATE KEY UPDATE
+        a = VALUES(a)*50
+
+Where:
+?i - integer
+?f - float
+?b - boolean
+?d - date
+?t - time
+?dt - datetime
+?s - string (mysql_real_escape_string)
+?x - auto detect type
+?e - eval - no changes
+?li - list of int
+?ls - list of string
+
+*Building lists for queries with IN*
+
+Build list of int values with @?li@ modifier:
+
+bc. $ids = array(1,3,5,7);
+$res = Q('SELECT * FROM #test WHERE id IN(?li)', array($ids));
+
+Builded query:
+
+bc. SELECT * FROM project__test WHERE id IN(1,3,5,7)
+
+List of string values with @?ls@: modifier:
+
+bc. $names = array('Anna', 'Bob');
+$res = Q('SELECT * FROM #test WHERE name IN(?ls)', array($names));
+
+Builded query:
+
+bc. SELECT * FROM project__test WHERE name IN('Anna', 'Bob')
+
+*Execute query on other db, get all rows and free result*
+
+bc. $all = Q('other-db: SHOW TABLES')->all();
+
+*You can use connection as a variable*
+
+bc. $db = QF('mysql://user:pass@host/dbname?charset=utf8')->connect()->tablePrefix('aa__');
+$all = $db->query('SELECT * FROM #registration_document_types')->all();
+
+h2. Aliases for query parameters
+
+You can use aliases for query parameters:
+
+bc. Q('SELECT * FROM #table WHERE a = ?s:param1 AND b = ?i:param2', array(
+        'param2' => 123,
+        'param1' => 'some value'
+);
+
+Builded query:
+
+bc. SELECT * FROM #table WHERE a = 'some value' AND b = 123
+
+Also you can use combined method of passing parameters:
+
+bc. Q('SELECT * FROM #table WHERE a = ?s:param1 AND b = ?i:param2 AND c = ?f', array(
+        'param2' => 123,
+        12.65,
+        'param1' => 'some value'
+);
+
+Builded query (if aliases not set, the parameter will be getting by array_shift):
+
+bc. SELECT * FROM #table WHERE a = 'some value' AND b = 123 AND c = 12.65
+
+Another example:
+
+bc. Q('INSERT INTO #table (a, b, c) VALUES 
+                (?i:field_a, ?s:field_b, CONCAT(?x, ":", ?s:field_b))
+        ON DUPLICATE KEY UPDATE a = VALUES(a) * ?x:multiplier', array(
+    array(
+        'field_a' => '1', 'field_b' => 'AAA 1', 1
+    ),
+    array(
+        'field_a' => '2', 'field_b' => 'BBB 2', 2
+    ),
+    'multiplier' => 75,
+    array(
+        'field_a' => '3', 'field_b' => 'CCC 3', 3
+    )
+));
+
+Builded query:
+
+bc. INSERT INTO seg__table (a, b, c) VALUES 
+        (1, 'AAA 1', CONCAT(1, ":", 'AAA 1')), 
+        (2, 'BBB 2', CONCAT(2, ":", 'BBB 2')), 
+        (3, 'CCC 3', CONCAT(3, ":", 'CCC 3'))
+    ON DUPLICATE KEY UPDATE 
+        a = VALUES(a) * 75
