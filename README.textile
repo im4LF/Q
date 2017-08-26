@@ -5,16 +5,14 @@ Simple database abstraction library for php
 h2. Connect to database
 
 bc. require 'path/to/Q/Q.php';
-QF('mysql://user:pass@host:port/dbname') // setup dsn
+QF('mysql://user:pass@host/dbname') // setup dsn
     ->connect()                     // connect to database
     ->alias('default')              // set "default" alias
     ->tablePrefix('project__');     // set table prefix
 
 Connect to other db and set alias "other-db"
 
-bc. QF('mysql://user:pass@host/dbname?encoding=utf8')->alias('other-db')->connect()->tablePrefix('bb__');
-or
-QF('mysqli://user:pass@host:port/dbname?encoding=utf8')->alias('other-db')->connect()->tablePrefix('bb__');
+bc. QF('mysql://user:pass@host/dbname2?charset=utf8')->alias('other-db')->connect()->tablePrefix('bb__');
 
 h2. Executing query, fetch row and free result
 
@@ -103,7 +101,7 @@ bc. $all = Q('other-db: SHOW TABLES')->all();
 
 *You can use connection as a variable*
 
-bc. $db = QF('mysql://user:pass@host/dbname?encoding=utf8')->connect()->tablePrefix('aa__');
+bc. $db = QF('mysql://user:pass@host/dbname?charset=utf8')->connect()->tablePrefix('aa__');
 $all = $db->query('SELECT * FROM #registration_document_types')->all();
 
 h2. Aliases for query parameters
