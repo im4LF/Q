@@ -306,9 +306,11 @@ class Qmysqli_Driver extends QAny_Driver
                 return $this->_link->affected_rows;
             break;
         }
-        
-        $_SESSION['sql'] += 1;
-        
+
+        if (isset($_SESSION['sql'])) {
+            $_SESSION['sql'] += 1;
+        }
+
         return new Qmysqli_Result($res, $this->_fetch_mode);
     }
 }

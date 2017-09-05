@@ -6,14 +6,6 @@
 
 define('Q_PATH', realpath(dirname(__FILE__)));
 
-if (!isset($_SESSION['sql'])) {
-    $_SESSION['sql'] = 0;
-}
-
-if (!isset($_SESSION['sql_log'])) {
-    $_SESSION['sql_log'] = [];
-}
-
 $__qr = array();
 $__qds = array();
 
