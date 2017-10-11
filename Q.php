@@ -45,7 +45,7 @@ function Q($sql = null, $values = array())
         return $__qr[$buf['alias']];
     }
 
-    if (defined(DEV_MODE) && DEV_MODE && isset($_SESSION['sql_log']))
+    if (defined('DEV_MODE') && DEV_MODE && isset($_SESSION['sql_log']))
     {
         $_SESSION['sql_log'][] = $buf['sql'];
     }

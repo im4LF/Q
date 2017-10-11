@@ -307,7 +307,7 @@ class Qmysqli_Driver extends QAny_Driver
             break;
         }
 
-        if (defined(DEV_MODE) && DEV_MODE && isset($_SESSION['sql']))
+        if (defined('DEV_MODE') && DEV_MODE && isset($_SESSION['sql']))
         {
             $_SESSION['sql'] += 1;
         }
