@@ -5,14 +5,14 @@ class Qmysqli_Driver extends QAny_Driver
     protected $_link;
     protected $_fetch_mode;
     protected $_query_mode;
-    
+
     public function __construct($config)
     {
         $this->_config = $config;
         $this->_config['path'] = substr($this->_config['path'], 1);
         $this->fetchMode('assoc');
     }
-    
+
     protected function _throwException()
     {
         if (is_resource($this->_link)) {
@@ -22,10 +22,10 @@ class Qmysqli_Driver extends QAny_Driver
             $code     = $this->_link->connect_errno;
             $message = $this->_link->connect_error;
         }
-        
+
         throw new QException('Action: '.$this->_action."\n".$message, $code);
     }
-    
+
     protected function _formatValue($value, $type)
     {
         if ('x' == $type) {
@@ -48,23 +48,23 @@ class Qmysqli_Driver extends QAny_Driver
                 if (!is_array($value) || !count($value)) {
                     return '0';
                 }
-                
+
                 $buf = (int) array_shift($value);
                 while ($i = array_shift($value)) {
                     $buf .= ',' . (int) $i;
                 }
-                
+
                 return $buf;
             case 'ls':
                 if (!is_array($value) || !count($value)) {
                     return '\'\'';
                 }
-                
+
                 $buf = '\''.$this->_link->escape_string(array_shift($value)).'\'';
                 while ($s = array_shift($value)) {
                     $buf .= ',\''.$this->_link->escape_string($s).'\'';
                 }
-                
+
                 return $buf;
             case 'e':
                 return $value;
@@ -84,7 +84,7 @@ class Qmysqli_Driver extends QAny_Driver
                 return '\''.$this->_link->escape_string($value).'\'';
         }
     }
-    
+
     public function connect()
     {
         $this->_action = 'connect';
@@ -245,7 +245,7 @@ class Qmysqli_Driver extends QAny_Driver
         }
         //__($values);
         // replace place holders by values
-        //if (false !== strpos($sql, '?'))	// if values not a set of array
+        //if (false !== strpos($sql, '?'))  // if values not a set of array
         if (count($values)) {
             $buf = explode('?', $sql);
             $matches = array();
@@ -286,22 +286,22 @@ class Qmysqli_Driver extends QAny_Driver
         if (false === ($sql = $this->buildQuery($sql, $values))) {
             $this->_throwException();
         }
-        
+
         $t0 = microtime(true);
         $this->_action = 'execute query: ['.$sql.']';
-        
+
         if (false === ($res = $this->_link->query($sql))) {
             $this->_throwException();
         }
-        
+
         $t1 = microtime(true);
         $__qds[$this->_action] = $t1-$t0;
-        
+
         switch ($this->_query_mode) {
             case 'insert':
                 return $this->_link->insert_id;
             break;
-        
+
             case 'update': case 'delete': case 'replace':
                 return $this->_link->affected_rows;
             break;
@@ -321,38 +321,38 @@ class Qmysqli_Result
     protected $_result;
     protected $_fetch_mode;
     protected $_fetch_function;
-    
+
     public function __construct($result, $fetch_mode = 'assoc')
     {
         $this->_result = $result;
         $this->fetchMode($fetch_mode);
     }
-    
+
     public function fetchMode($mode = null)
     {
         if (!$mode) {
             return $this->_fetch_mode;
         }
-            
+
         $this->_fetch_mode = $mode;
         $this->_fetch_function = 'fetch_'.$mode;
         return $this;
     }
-    
+
     public function numRows()
     {
         return $this->_result->num_rows;
     }
-    
+
     public function fetchRow($field = null)
     {
         return $this->row($field);
     }
-    
+
     public function row($field = null)
     {
         $fetch_function = $this->_fetch_function;
-        
+
         $buf = $this->_result->{$fetch_function}();
         $this->_result->free();
 
@@ -363,15 +363,15 @@ class Qmysqli_Result
         if (null !== $field && (isset($buf[$field]) || (is_array($buf) && array_key_exists($field, $buf)))) {
             return $buf[$field];
         }
-        
+
         return $buf;
     }
-    
+
     public function fetchEach()
     {
         return $this->each();
     }
-    
+
     public function each()
     {
         $fetch_function = $this->_fetch_function;
@@ -380,20 +380,20 @@ class Qmysqli_Result
             $this->_result->free();
             return false;
         }
-        
+
         return $buf;
     }
-    
+
     public function fetchAll($by_key = null)
     {
         return $this->all($by_key);
     }
-    
+
     public function all($by_key = null)
     {
         $all = array();
         $fetch_function = $this->_fetch_function;
-        
+
         if (!is_null($this->_result)) {
             while ($row = $this->_result->{$fetch_function}()) {
                 if (null !== $by_key) {
@@ -402,13 +402,13 @@ class Qmysqli_Result
                     $all[] = $row;
                 }
             }
-        
+
             $this->_result->free();
         }
 
         return $all;
     }
-    
+
     public function free()
     {
         $this->_result->free();
