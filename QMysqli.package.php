@@ -92,7 +92,7 @@ class Qmysqli_Driver extends QAny_Driver
         if (false === ($this->_link = new mysqli($this->_config['host'], $this->_config['user'], $this->_config['pass'], $this->_config['path']))) {
             $this->_throwException();
         }
-        
+
         if (isset($this->_config['params']['encoding'])) {
             if (isset($this->_config['params']['encoding'])) {
                 $this->_action = 'set encoding';
@@ -105,40 +105,40 @@ class Qmysqli_Driver extends QAny_Driver
 
         return $this;
     }
-    
+
     public function disconnect()
     {
         $this->_action = 'disconnect';
         if (false === $this->_link->close()) {
             $this->_throwException();
         }
-            
+
         return $this;
     }
-    
+
     public function fetchMode($mode = null)
     {
         if (!$mode) {
             return $this->_fetch_mode;
         }
-            
+
         $this->_fetch_mode = $mode;
         return $this;
     }
-    
+
     public function buildQuery($sql, $values)
     {
         // detect query mode
         $this->_query_mode = 'select';
-        
+
         if (preg_match('/^\s*(\w+)/i', $sql, $matches)) {
             $this->_query_mode = strtolower($matches[1]);
         }
-            
+
         // replace # by table prefix
         if (false !== strpos($sql, '#_')) {
             $this->_action = 'build query, table prefixes: ['.$sql.']';
-            
+
             $buf = explode('#_', $sql);
             for ($i = 1; $i < count($buf); $i++) {
                 $prefix_id = 0;
@@ -147,24 +147,24 @@ class Qmysqli_Driver extends QAny_Driver
                     $prefix_id = $matches[1];
                     $prefix_id_len = strlen($matches[1]);
                 }
-                    
+
                 if (!isset($this->_table_prefix[$prefix_id])) {
                     return false;
                 }
-                    
+
                 $buf[$i] = $this->_table_prefix[$prefix_id].'_'.substr($buf[$i], $prefix_id_len);
             }
             $sql = implode('', $buf);
         }
-        
+
         if (is_null($values)) {    // if values not passed - return builded sql
             return $sql;
         }
-        
+
         $this->_action = 'build query, place holders: ['.$sql.']';
-        
-        $aliases = array();
-        
+
+        $aliases = [];
+
         // replace values for insert mode
         if ('insert' == $this->_query_mode) {
             $insert_set = false;
@@ -174,36 +174,36 @@ class Qmysqli_Driver extends QAny_Driver
                 if (!is_array($value)) {
                     continue;
                 }
-                
+
                 $insert_set = true;
                 break;
             }
-            
+
             if ($insert_set) {
                 // find template for inserting set of data, match inner blocks - (some block (inner block))
                 if (!preg_match('/\((?>[^)(]+|(?R))*\)/x', $sql, $template, PREG_OFFSET_CAPTURE, stripos($sql, 'VALUES'))) {
                     return false;
                 }
-                
+
                 //__($template);
-                
+
                 //$buf = explode('?', $template[1][0]);
                 $buf = explode('?', substr($template[0][0], 1, strlen($template[0][0])-2));
-                $matches = array();
+                $matches = [];
                 for ($i = 1; $i < count($buf); $i++) {
                     if (!preg_match('/^(\w+)(:(\w+))?/', $buf[$i], $matches)) {
                         continue;
                     }
-                        
+
                     $buf[$i] = array(
                         'type' => $matches[1],
                         'alias' => isset($matches[3]) ? $matches[3] : null,
                         'after' => substr($buf[$i], strlen($matches[1]) + (isset($matches[2]) ? strlen($matches[2]) : 0))
                     );
                 }
-                
+
                 //__($buf);
-                $set = array();
+                $set = [];
                 //foreach ($values as $k => &$row)
                 $i = -1;
                 $n = count($values)-1;
@@ -214,9 +214,9 @@ class Qmysqli_Driver extends QAny_Driver
                     if (!is_array($row)) {
                         continue;
                     }
-                        
+
                     $i++;
-                    
+
                     $set[$i] = '('.$buf[0];
                     for ($j = 1; $j < count($buf); $j++) {
                         if (!is_null($buf[$j]['alias'])) {    // if is set alias of field
@@ -226,12 +226,12 @@ class Qmysqli_Driver extends QAny_Driver
                                 $aliases[$i][$current_alias] = $row[$buf[$j]['alias']];
                                 unset($row[$buf[$j]['alias']]);
                             }
-                            
+
                             $value = $aliases[$i][$current_alias];
                         } else {
                             $value = array_shift($row);
                         }
-                    
+
                         $set[$i] .= $this->_formatValue($value, $buf[$j]['type']).$buf[$j]['after'];
                     }
 
@@ -239,7 +239,7 @@ class Qmysqli_Driver extends QAny_Driver
                     unset($values[$key]);
                     //unset($aliases[$i]);
                 }
-                
+
                 $sql = substr($sql, 0, $template[0][1]).implode(', ', $set).substr($sql, $template[0][1]+strlen($template[0][0]));
             }
         }
@@ -248,9 +248,9 @@ class Qmysqli_Driver extends QAny_Driver
         //if (false !== strpos($sql, '?'))  // if values not a set of array
         if (count($values)) {
             $buf = explode('?', $sql);
-            $matches = array();
+            $matches = [];
             $value = null;
-            
+
             for ($i = 1; $i < count($buf); $i++) {
                 if (!preg_match('/^(\w+)(:(\w+))?/', $buf[$i], $matches)) {
                     continue;
@@ -264,12 +264,12 @@ class Qmysqli_Driver extends QAny_Driver
                     }
                     /*else
                         $aliases[$matches[3]] = array_shift($values);*/
-                    
+
                     $value = $aliases[$matches[3]];
                 } else {
                     $value = array_shift($values);
                 }
-                    
+
                 $buf[$i] = $this->_formatValue($value, $matches[1]).
                             substr($buf[$i], strlen($matches[1]) + (isset($matches[2]) ? strlen($matches[2]) : 0));
             }
@@ -278,11 +278,11 @@ class Qmysqli_Driver extends QAny_Driver
         //__($aliases);
         return $sql;
     }
-    
-    public function query($sql, $values = array())
+
+    public function query($sql, $values = [])
     {
         global $__qds;
-        
+
         if (false === ($sql = $this->buildQuery($sql, $values))) {
             $this->_throwException();
         }
@@ -296,6 +296,11 @@ class Qmysqli_Driver extends QAny_Driver
 
         $t1 = microtime(true);
         $__qds[$this->_action] = $t1-$t0;
+
+        if (defined('DEV_MODE') && DEV_MODE && isset($_SESSION['sql_log']))
+        {
+            $_SESSION['sql_log'][] = $__qds;
+        }
 
         switch ($this->_query_mode) {
             case 'insert':
@@ -391,7 +396,7 @@ class Qmysqli_Result
 
     public function all($by_key = null)
     {
-        $all = array();
+        $all = [];
         $fetch_function = $this->_fetch_function;
 
         if (!is_null($this->_result)) {
