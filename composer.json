@@ -1,0 +1,29 @@
+{
+    "name": "lnked/q",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["query builder", "mysql"],
+    "description": "a query builder library for PHP",
+    "homepage": "http://github.com/lnked/Q",
+    "authors": [
+        {
+            "name": "im4LF",
+            "role": "Developer",
+            "homepage": "https://github.com/im4LF/"
+        },
+        {
+            "name": "ed",
+            "role": "Developer",
+            "email": "ed.proff@gmail.com",
+            "homepage": "https://github.com/lnked/"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0"
+    },
+    "autoload": {
+        "files": [
+            "Q.php"
+        ]
+    }
+}
